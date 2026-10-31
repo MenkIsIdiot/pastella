@@ -1,4 +1,7 @@
 # Pastella
+https://youtu.be/Yiok_p37FKQ
+Firman Agustian Iskandar
+IF24-A
 
 Pastella adalah aplikasi katalog belanja Flutter dengan tampilan pastel dan data
 produk dari [DummyJSON](https://dummyjson.com/).
