@@ -1,8 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/product.dart';
+import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
+import '../widgets/product_artwork.dart';
 
 class DetailScreen extends StatelessWidget {
   final Product product;
@@ -22,6 +24,25 @@ class DetailScreen extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          Consumer<ProductProvider>(
+            builder: (context, provider, child) {
+              final isFavorite = provider.isFavorite(product.id);
+              return IconButton(
+                tooltip: isFavorite
+                    ? 'Hapus dari favorit'
+                    : 'Tambahkan ke favorit',
+                onPressed: () => provider.toggleFavorite(product),
+                icon: Icon(
+                  isFavorite
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color: isFavorite ? Colors.pinkAccent : pastelText,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -38,6 +59,44 @@ class DetailScreen extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Consumer<ProductProvider>(
+                  builder: (context, provider, child) {
+                    return OutlinedButton.icon(
+                      onPressed: () {
+                        provider.addToCart(product);
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${product.title} ditambahkan ke keranjang',
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                      },
+                      icon: const Icon(Icons.add_shopping_cart_rounded),
+                      label: const Text('Tambah ke keranjang'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: pastelPurple,
+                        side: const BorderSide(color: pastelPurple),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -50,22 +109,7 @@ class DetailScreen extends StatelessWidget {
         color: pastelLavender.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: CachedNetworkImage(
-        imageUrl: product.thumbnail,
-        fit: BoxFit.contain,
-        placeholder: (context, url) {
-          return const Center(
-            child: CircularProgressIndicator(color: pastelPurple),
-          );
-        },
-        errorWidget: (context, url, error) {
-          return const Icon(
-            Icons.image_not_supported_outlined,
-            size: 60,
-            color: pastelPurple,
-          );
-        },
-      ),
+      child: ProductArtwork(product: product),
     );
   }
 
