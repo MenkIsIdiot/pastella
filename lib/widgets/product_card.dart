@@ -13,6 +13,7 @@ const Color pastelText = Color(0xFF393448);
 class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback onTap;
+  final Object? imageHeroTag;
   final bool isFavorite;
   final VoidCallback? onFavoriteTap;
   final VoidCallback? onAddToCart;
@@ -21,6 +22,7 @@ class ProductCard extends StatelessWidget {
     super.key,
     required this.product,
     required this.onTap,
+    this.imageHeroTag,
     this.isFavorite = false,
     this.onFavoriteTap,
     this.onAddToCart,
@@ -46,7 +48,10 @@ class ProductCard extends StatelessWidget {
                     child: Container(
                       color: pastelLavender.withValues(alpha: 0.42),
                       padding: const EdgeInsets.all(14),
-                      child: ProductArtwork(product: product),
+                      child: Hero(
+                        tag: imageHeroTag ?? 'product-image-${product.id}',
+                        child: ProductArtwork(product: product),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -90,14 +95,31 @@ class ProductCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.92),
                         shape: const CircleBorder(),
                         child: IconButton(
+                          tooltip: isFavorite
+                              ? 'Hapus dari favorit'
+                              : 'Tambahkan ke favorit',
                           visualDensity: VisualDensity.compact,
                           onPressed: onFavoriteTap,
-                          icon: Icon(
-                            isFavorite
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            color: isFavorite ? Colors.pinkAccent : pastelText,
-                            size: 20,
+                          icon: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            transitionBuilder: (child, animation) =>
+                                ScaleTransition(
+                                  scale: CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.elasticOut,
+                                  ),
+                                  child: child,
+                                ),
+                            child: Icon(
+                              isFavorite
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              key: ValueKey(isFavorite),
+                              color: isFavorite
+                                  ? Colors.pinkAccent
+                                  : pastelText,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ),

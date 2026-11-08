@@ -63,6 +63,12 @@ class ProductProvider extends ChangeNotifier {
   int get cartItemCount =>
       _cart.values.fold(0, (total, quantity) => total + quantity);
 
+  int get nextProductId =>
+      _allProducts.fold<int>(0, (maxId, product) {
+        return product.id > maxId ? product.id : maxId;
+      }) +
+      1;
+
   double get cartTotal => cartProducts.fold(
     0,
     (total, product) => total + product.price * quantityFor(product.id),
@@ -71,6 +77,28 @@ class ProductProvider extends ChangeNotifier {
   bool isFavorite(int productId) => _favoriteIds.contains(productId);
 
   int quantityFor(int productId) => _cart[productId] ?? 0;
+
+  void addProduct(Product product) {
+    _allProducts = [..._allProducts, product];
+    notifyListeners();
+  }
+
+  void updateProduct(Product product) {
+    final index = _allProducts.indexWhere((item) => item.id == product.id);
+    if (index == -1) {
+      throw StateError('Produk ${product.id} tidak ditemukan.');
+    }
+
+    _allProducts[index] = product;
+    notifyListeners();
+  }
+
+  void deleteProduct(int productId) {
+    _allProducts.removeWhere((product) => product.id == productId);
+    _favoriteIds.remove(productId);
+    _cart.remove(productId);
+    notifyListeners();
+  }
 
   Future<void> fetchProducts() async {
     isLoading = true;

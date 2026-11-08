@@ -7,6 +7,7 @@ import '../widgets/product_card.dart';
 import '../widgets/product_artwork.dart';
 import 'checkout_screen.dart';
 import 'detail_screen.dart';
+import 'product_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -103,6 +104,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          floatingActionButton: _selectedTab == 0
+              ? FloatingActionButton.extended(
+                  onPressed: _createProduct,
+                  backgroundColor: pastelPurple,
+                  foregroundColor: Colors.white,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Tambah produk'),
+                )
+              : null,
         );
       },
     );
@@ -206,28 +216,54 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTabContent(ProductProvider provider) {
+    final Widget content;
     if (provider.isLoading) {
-      return const Center(
+      content = const Center(
         child: CircularProgressIndicator(color: pastelPurple),
       );
+    } else if (provider.errorMessage != null && provider.products.isEmpty) {
+      content = _buildErrorState(provider);
+    } else {
+      switch (_selectedTab) {
+        case 1:
+          content = _buildFavorites(provider);
+          break;
+        case 2:
+          content = _buildCart(provider);
+          break;
+        default:
+          content = _buildHomeContent(provider);
+          break;
+      }
     }
 
-    if (provider.errorMessage != null && provider.products.isEmpty) {
-      return _buildErrorState(provider);
-    }
-
-    switch (_selectedTab) {
-      case 1:
-        return _buildFavorites(provider);
-      case 2:
-        return _buildCart(provider);
-      default:
-        return _buildHomeContent(provider);
-    }
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      reverseDuration: const Duration(milliseconds: 180),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(
+          begin: const Offset(0.025, 0),
+          end: Offset.zero,
+        ).animate(animation);
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slide, child: child),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey(
+          '$_selectedTab-${provider.isLoading}-'
+          '${provider.errorMessage != null && provider.products.isEmpty}',
+        ),
+        child: content,
+      ),
+    );
   }
 
   Widget _buildHomeContent(ProductProvider provider) {
-    if (provider.products.isEmpty) return _buildEmptyState();
+    if (provider.products.isEmpty) return _buildEmptyState(provider);
 
     return CustomScrollView(
       slivers: [
@@ -310,71 +346,71 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(25),
           child: Stack(
             children: [
-            Positioned(
-              right: -15,
-              bottom: -48,
-              child: Icon(
-                Icons.auto_awesome_rounded,
-                size: 190,
-                color: Colors.white.withValues(alpha: 0.1),
+              Positioned(
+                right: -15,
+                bottom: -48,
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 190,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 19, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'TEMUKAN FAVORIT BARU',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w700,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 19, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Hal kecil yang\nbikin harimu manis.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      height: 1.15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Row(
-                    children: [
-                      Text(
-                        'Jelajahi koleksi',
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'TEMUKAN FAVORIT BARU',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 9,
+                          letterSpacing: 1,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(width: 5),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Hal kecil yang\nbikin harimu manis.',
+                      style: TextStyle(
                         color: Colors.white,
+                        fontSize: 20,
+                        height: 1.15,
+                        fontWeight: FontWeight.w800,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const Spacer(),
+                    const Row(
+                      children: [
+                        Text(
+                          'Jelajahi koleksi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
             ],
           ),
         ),
@@ -443,6 +479,11 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.favorite_border_rounded,
         title: 'Belum ada yang disimpan',
         message: 'Tekan ikon hati pada produk yang kamu suka.',
+        action: OutlinedButton.icon(
+          onPressed: () => setState(() => _selectedTab = 0),
+          icon: const Icon(Icons.storefront_outlined),
+          label: const Text('Jelajahi produk'),
+        ),
       );
     }
 
@@ -474,6 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final product = products[index];
           return ProductCard(
             product: product,
+            imageHeroTag: _productHeroTag(product),
             isFavorite: provider.isFavorite(product.id),
             onFavoriteTap: () => provider.toggleFavorite(product),
             onAddToCart: () {
@@ -485,6 +527,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     content: Text('${product.title} ditambahkan ke keranjang'),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
+                    action: SnackBarAction(
+                      label: 'Lihat keranjang',
+                      onPressed: () => setState(() => _selectedTab = 2),
+                    ),
                   ),
                 );
             },
@@ -507,6 +553,11 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.shopping_bag_outlined,
         title: 'Keranjang masih kosong',
         message: 'Yuk, temukan sesuatu yang kamu suka hari ini.',
+        action: ElevatedButton.icon(
+          onPressed: () => setState(() => _selectedTab = 0),
+          icon: const Icon(Icons.storefront_outlined),
+          label: const Text('Mulai belanja'),
+        ),
       );
     }
 
@@ -678,9 +729,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CheckoutScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const CheckoutScreen()),
                 );
               },
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
@@ -704,7 +753,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildMessageState(
       icon: Icons.cloud_off_rounded,
       title: 'Produk belum bisa dimuat',
-      message: provider.errorMessage ?? 'Periksa koneksi internet lalu coba lagi.',
+      message:
+          provider.errorMessage ?? 'Periksa koneksi internet lalu coba lagi.',
       action: ElevatedButton.icon(
         onPressed: provider.fetchProducts,
         icon: const Icon(Icons.refresh_rounded),
@@ -713,11 +763,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ProductProvider provider) {
     return _buildMessageState(
       icon: Icons.search_off_rounded,
       title: 'Produk tidak ditemukan',
       message: 'Coba kata kunci atau kategori yang berbeda.',
+      action: OutlinedButton.icon(
+        onPressed: () {
+          _searchController.clear();
+          provider.setSearchQuery('');
+          provider.setCategory('Semua');
+        },
+        icon: const Icon(Icons.filter_alt_off_rounded),
+        label: const Text('Hapus filter'),
+      ),
     );
   }
 
@@ -768,9 +827,24 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openDetail(Product product) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => DetailScreen(product: product)),
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          product: product,
+          imageHeroTag: _productHeroTag(product),
+        ),
+      ),
     );
   }
+
+  void _createProduct() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+    );
+  }
+
+  String _productHeroTag(Product product) =>
+      'product-image-${product.id}-$_selectedTab';
 }
 
 extension on String {

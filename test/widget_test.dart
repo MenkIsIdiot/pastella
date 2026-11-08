@@ -9,6 +9,52 @@ import 'package:pastella/screens/home_screen.dart';
 import 'package:pastella/services/api_service.dart';
 
 void main() {
+  test('products can be created, updated, and deleted', () async {
+    final provider = ProductProvider(apiService: _FakeApiService());
+    await provider.fetchProducts();
+
+    final product = Product(
+      id: provider.nextProductId,
+      title: 'Kue Baru',
+      description: 'Deskripsi kue.',
+      category: 'koleksi',
+      price: 15,
+      rating: 0,
+      thumbnail: '',
+      brand: 'Pastella',
+      stock: 4,
+    );
+    provider.addProduct(product);
+    expect(provider.products.any((item) => item.id == product.id), isTrue);
+
+    final updatedProduct = Product(
+      id: product.id,
+      title: 'Kue Pilihan',
+      description: product.description,
+      category: product.category,
+      price: 20,
+      rating: product.rating,
+      thumbnail: product.thumbnail,
+      brand: product.brand,
+      stock: product.stock,
+    );
+    provider.updateProduct(updatedProduct);
+    expect(
+      provider.products.singleWhere((item) => item.id == product.id).title,
+      'Kue Pilihan',
+    );
+
+    provider.toggleFavorite(updatedProduct);
+    provider.addToCart(updatedProduct);
+    provider.deleteProduct(updatedProduct.id);
+    expect(
+      provider.products.any((item) => item.id == updatedProduct.id),
+      isFalse,
+    );
+    expect(provider.favoriteProducts, isEmpty);
+    expect(provider.cartProducts, isEmpty);
+  });
+
   test('catalog filters products and updates favorites and cart', () async {
     final provider = ProductProvider(apiService: _FakeApiService());
 
@@ -66,6 +112,69 @@ void main() {
     await tester.tap(exploreButton);
     await tester.pumpAndSettle();
 
+    expect(find.text('Pilihan untukmu'), findsOneWidget);
+  });
+
+  testWidgets('new product form adds a product to the catalog', (
+    WidgetTester tester,
+  ) async {
+    final provider = ProductProvider(apiService: _FakeApiService());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Tambah produk'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tambah Produk'), findsOneWidget);
+
+    final fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'Kue Baru');
+    await tester.enterText(fields.at(1), 'Pastella');
+    await tester.enterText(fields.at(2), 'koleksi');
+    await tester.enterText(fields.at(3), '15.5');
+    await tester.enterText(fields.at(4), '4');
+    await tester.enterText(fields.at(6), 'Deskripsi kue.');
+    await tester.ensureVisible(find.text('Tambah produk'));
+    await tester.tap(find.text('Tambah produk'));
+    await tester.pumpAndSettle();
+
+    expect(
+      provider.products.any((product) => product.title == 'Kue Baru'),
+      isTrue,
+    );
+  });
+
+  testWidgets('empty favorites and cart guide shoppers back to the catalog', (
+    WidgetTester tester,
+  ) async {
+    final provider = ProductProvider(apiService: _FakeApiService());
+    await provider.fetchProducts();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Favorit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada yang disimpan'), findsOneWidget);
+
+    await tester.tap(find.text('Jelajahi produk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keranjang'));
+    await tester.pumpAndSettle();
+    expect(find.text('Keranjang masih kosong'), findsOneWidget);
+
+    await tester.tap(find.text('Mulai belanja'));
+    await tester.pumpAndSettle();
     expect(find.text('Pilihan untukmu'), findsOneWidget);
   });
 

@@ -5,11 +5,13 @@ import '../models/product.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_artwork.dart';
+import 'product_form_screen.dart';
 
 class DetailScreen extends StatelessWidget {
   final Product product;
+  final Object? imageHeroTag;
 
-  const DetailScreen({super.key, required this.product});
+  const DetailScreen({super.key, required this.product, this.imageHeroTag});
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +27,38 @@ class DetailScreen extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Kelola produk',
+            onSelected: (action) {
+              if (action == 'edit') {
+                _editProduct(context);
+              } else {
+                _confirmDelete(context);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_outlined),
+                    const SizedBox(width: 12),
+                    const Text('Edit produk'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_outline_rounded),
+                    const SizedBox(width: 12),
+                    const Text('Hapus produk'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           Consumer<ProductProvider>(
             builder: (context, provider, child) {
               final isFavorite = provider.isFavorite(product.id);
@@ -100,6 +134,43 @@ class DetailScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _editProduct(BuildContext context) async {
+    final updatedProduct = await Navigator.push<Product>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductFormScreen(product: product),
+      ),
+    );
+    if (updatedProduct != null && context.mounted) {
+      Navigator.pop(context, updatedProduct);
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus produk?'),
+        content: Text('Produk "${product.title}" akan dihapus dari katalog.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete == true && context.mounted) {
+      context.read<ProductProvider>().deleteProduct(product.id);
+      Navigator.pop(context);
+    }
+  }
+
   Widget _buildProductImage() {
     return Container(
       width: double.infinity,
@@ -109,7 +180,10 @@ class DetailScreen extends StatelessWidget {
         color: pastelLavender.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: ProductArtwork(product: product),
+      child: Hero(
+        tag: imageHeroTag ?? 'product-image-${product.id}',
+        child: ProductArtwork(product: product),
+      ),
     );
   }
 
